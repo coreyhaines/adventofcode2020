@@ -26,8 +26,19 @@ describe "Solving parts of challenge with batch file" do
   end
 end
 
+# Solves the binary string -> number in two different ways, because ¯\_(ツ)_/¯
 def seat_code(representation)
+  # First method is the most straightforward, since Ruby has easy parsing capabilities
   representation.tr("FBLR", "0101").to_i(2)
+
+  # Second method manual converts binary to decimal
+  #representation
+    #.reverse # When calculating, need to go from right to left
+    #.each_char # Split into the chars
+    #.map{ ["B","R"].include?(_1) ? 1 : 0 } # Convert them into 1s and 0s
+    #.each_with_index # Keep track of the position
+    #.map{|bit, index| bit * 2**index } # Convert to value based on position
+    #.reduce(&:+) # Add them all up
 end
 
 describe "Interpreting the seat instructions" do
