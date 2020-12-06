@@ -2,35 +2,27 @@
 # Validate Passports
 # part 1 - check required fields
 # part 2 - validate fields
+
+require_relative "../shared/loads_entries"
 describe "Solving parts of challenge with batch file" do
   it "solves part 1" do
-    lines = File.open("./input.txt").readlines
-    expect(collect_entries(lines)
+    expect(
+      LoadsEntries.from_file("./input.txt")
       .map{parse_fields(_1)}
       .map{check_missing_keys(_1)}
       .select(&:itself)
-      .length).to eq(219)
+      .length
+    ).to eq(219)
   end
 
   it "solves part 2" do
-    lines = File.open("./input.txt").readlines
-    expect(collect_entries(lines)
+    expect(
+      LoadsEntries.from_file("./input.txt")
       .map{parse_fields(_1)}
       .select{check_missing_keys(_1)}
       .select{check_formats(_1)}
-      .length).to eq(127)
-  end
-end
-
-def collect_entries(lines)
-  lines.reduce([""]) do |accum, line|
-    if line == "\n" then
-      accum[-1].strip!
-      accum << ""
-    else
-      accum[-1] << line + " "
-    end
-    accum
+      .length
+    ).to eq(127)
   end
 end
 
@@ -42,7 +34,7 @@ def parse_fields(line)
 end
 
 def parse_entries(lines)
-  collect_entries(lines)
+  LoadsEntries.from_lines(lines)
     .map{|entry| parse_fields(entry) }
 end
 
@@ -120,10 +112,10 @@ describe "Building pieces" do
 
   let(:invalid_passports) {
     [["iyr:2013 ecl:amb cid:350 eyr:2023 pid:028048884",
-     "hcl:#cfa07d byr:1929"],
+      "hcl:#cfa07d byr:1929"],
 
-     ["hcl:#cfa07d eyr:2025 pid:166559648",
-     "iyr:2011 ecl:brn hgt:59in"]]
+      ["hcl:#cfa07d eyr:2025 pid:166559648",
+       "iyr:2011 ecl:brn hgt:59in"]]
   }
 
   describe "entry validations for part 2" do
@@ -188,21 +180,6 @@ describe "Building pieces" do
     it "separates into name-values" do
       fields = parse_fields("ecl:gry pid:860033327 eyr:2020 hcl:#fffffd")
       expect(fields).to match({"ecl" => "gry", "pid" => "860033327", "eyr" => "2020", "hcl" => "#fffffd"})
-    end
-  end
-
-  context "gathering entries" do
-    it "collects a single entry" do
-      entries = collect_entries(valid_passport)
-      expect(entries.length).to eq(1)
-      expect(entries.first.split(" ")).to match_array(valid_passport.join(" ").split(" "))
-    end
-
-    it "supports collecting multiple entries" do
-      entries = collect_entries(valid_passport + ["\n"] + northpole_passport)
-      expect(entries.length).to eq(2)
-      expect(entries[0].split(" ")).to match_array(valid_passport.join(" ").split(" "))
-      expect(entries[1].split(" ")).to match_array(northpole_passport.join(" ").split(" "))
     end
   end
 
