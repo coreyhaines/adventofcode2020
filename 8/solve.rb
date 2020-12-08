@@ -1,3 +1,7 @@
+# https://adventofcode.com/2020/day/8
+# Running Handheld Console
+# part 1 - Detect loop and quit
+# part 2 - Fix loop
 describe "Solving parts of challenge with batch file" do
   it "solves part 1" do
     File.open("./input.txt") do |file|
@@ -6,6 +10,57 @@ describe "Solving parts of challenge with batch file" do
         run_program(lines)[:accumulator]
       ).to eq(1753)
     end
+  end
+
+  it "solves part 2" do
+    File.open("./input.txt") do |file|
+      instructions = file.readlines(chomp: true)
+        .map{parse_instruction(_1)}
+      expect(
+        fix_loop(instructions)[:accumulator]
+      ).to eq(733)
+    end
+  end
+end
+
+module PROGRAM_STATE
+  NOT_STARTED = :not_started
+  RUNNING = :running
+  COMPLETED = :completed
+  STOPPED_LOOP_DETECTED = :stopped_loop_detected
+end
+
+def initial_context
+  { accumulator: 0,
+    instruction_pointer: 0,
+    instruction_pointer_history: [],
+    program_state: PROGRAM_STATE::NOT_STARTED
+  }
+end
+
+def fix_loop(instructions)
+  nop_and_jump_indexes = instructions
+    .each_with_index
+    .filter_map{ |instruction, index| [:nop, :jmp].include?(instruction[0]) ? index : nil }
+
+  nop_and_jump_indexes.each { |fix_index|
+    test_instructions = instructions.dup # make a copy of the instructions
+    test_instructions[fix_index] = replacement_instruction(test_instructions[fix_index]) # swap out the instruction
+    context = run_instructions(initial_context, test_instructions) # try the run
+    if context[:program_state] == PROGRAM_STATE::COMPLETED # return if we completed
+      return context
+    end
+  }
+end
+
+def replacement_instruction(instruction)
+  case instruction[0]
+  when :jmp
+    [:nop, instruction[1]]
+  when :nop
+    [:jmp, instruction[1]]
+  else
+    instruction
   end
 end
 
@@ -41,21 +96,22 @@ def run_instruction(context, instruction)
 end
 
 def run_instructions(context, instructions)
-  current_context = context.dup
-  while current_context[:instruction_pointer].between?(0, instructions.length-1) &&
-      !current_context[:instruction_pointer_history].include?(current_context[:instruction_pointer])
+  current_context = context
+  current_context[:program_state] = PROGRAM_STATE::RUNNING
+  while current_context[:program_state] == PROGRAM_STATE::RUNNING
     current_instruction = instructions[current_context[:instruction_pointer]]
     current_context[:instruction_pointer_history] << current_context[:instruction_pointer]
     current_context = run_instruction(current_context, current_instruction)
+    current_context[:program_state] =
+      if !current_context[:instruction_pointer].between?(0, instructions.length-1)
+        PROGRAM_STATE::COMPLETED
+      elsif current_context[:instruction_pointer_history].include?(current_context[:instruction_pointer])
+        PROGRAM_STATE::STOPPED_LOOP_DETECTED
+      else
+        current_context[:program_state]
+      end
   end
   current_context
-end
-
-def initial_context
-  { accumulator: 0,
-    instruction_pointer: 0,
-    instruction_pointer_history: []
-  }
 end
 
 describe "parsing instructions" do
